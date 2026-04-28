@@ -2,11 +2,11 @@ import os
 import requests
 import re
 
- 
+
 CONFIG = {
     "android_arm64": True,      
-    "android_universal": False,  
-    "windows_amd64": True        
+    "android_universal": False, 
+    "windows_amd64": True       
 }
 
 DOWNLOAD_DIR = "downloads"
@@ -19,7 +19,8 @@ def ensure_dir(directory):
 def should_download(asset_name):
     name = asset_name.lower()
     
-     if CONFIG["android_arm64"] and "arm64-v8a" in name and name.endswith(".apk"):
+  
+    if CONFIG["android_arm64"] and "arm64-v8a" in name and name.endswith(".apk"):
         return True
     if CONFIG["android_universal"] and "universal" in name and name.endswith(".apk"):
         return True
@@ -29,7 +30,8 @@ def should_download(asset_name):
     return False
 
 def get_latest_release(repo_url):
-     match = re.search(r"github\.com/([^/]+)/([^/]+)", repo_url)
+
+    match = re.search(r"github\.com/([^/]+)/([^/]+)", repo_url)
     if not match:
         print(f"[-] Invalid URL: {repo_url}")
         return None
@@ -37,7 +39,8 @@ def get_latest_release(repo_url):
     owner, repo = match.groups()
     api_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     
-     headers = {"Accept": "application/vnd.github.v3+json"}
+
+    headers = {"Accept": "application/vnd.github.v3+json"}
     token = os.getenv("GITHUB_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -68,7 +71,7 @@ def main():
     ensure_dir(DOWNLOAD_DIR)
 
     with open(LINKS_FILE, "r") as file:
-        links = [line.strip() for line in file.readlines() if line.strip()]
+        links =[line.strip() for line in file.readlines() if line.strip()]
 
     for link in links:
         print(f"\n>>> Checking repository: {link}")
@@ -80,16 +83,17 @@ def main():
         tag_name = release_data.get("tag_name", "Unknown")
         print(f"[*] Latest version found: {tag_name}")
         
-        assets = release_data.get("assets", [])
+        assets = release_data.get("assets",[])
         
         for asset in assets:
             asset_name = asset["name"]
             download_url = asset["browser_download_url"]
             
-             if should_download(asset_name):
+            
+            if should_download(asset_name):
                 save_path = os.path.join(DOWNLOAD_DIR, asset_name)
                 
-                 if os.path.exists(save_path):
+                if os.path.exists(save_path):
                     print(f"[!] Skipped: '{asset_name}' already exists (No new update).")
                 else:
                     download_file(download_url, save_path)
