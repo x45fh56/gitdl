@@ -1,12 +1,12 @@
 import os
 import requests
 import re
-import glob
+
 
 CONFIG = {
-    "android_arm64": True,
-    "android_universal": False,
-    "windows_amd64": True
+    "android_arm64": True,      
+    "android_universal": False, 
+    "windows_amd64": True       
 }
 
 DOWNLOAD_DIR = "downloads"
@@ -19,6 +19,7 @@ def ensure_dir(directory):
 def should_download(asset_name):
     name = asset_name.lower()
     
+  
     if CONFIG["android_arm64"] and "arm64-v8a" in name and name.endswith(".apk"):
         return True
     if CONFIG["android_universal"] and "universal" in name and name.endswith(".apk"):
@@ -29,6 +30,7 @@ def should_download(asset_name):
     return False
 
 def get_latest_release(repo_url):
+
     match = re.search(r"github\.com/([^/]+)/([^/]+)", repo_url)
     if not match:
         print(f"[-] Invalid URL: {repo_url}")
@@ -37,6 +39,7 @@ def get_latest_release(repo_url):
     owner, repo = match.groups()
     api_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
     
+
     headers = {"Accept": "application/vnd.github.v3+json"}
     token = os.getenv("GITHUB_TOKEN")
     if token:
@@ -60,41 +63,6 @@ def download_file(url, save_path):
     else:
         print("[-] Download failed.")
 
-def clean_previous_versions(asset_name, directory):
-    file_ext = os.path.splitext(asset_name)[1]
-    
-    patterns = []
-    
-    if 'arm64' in asset_name:
-        patterns.append('*arm64*' + file_ext)
-    elif 'universal' in asset_name:
-        patterns.append('*universal*' + file_ext)
-    
-    if 'windows' in asset_name or 'amd64' in asset_name:
-        patterns.append('*windows*' + file_ext)
-    
-    for pattern in patterns:
-        old_files = glob.glob(os.path.join(directory, pattern))
-        for old_file in old_files:
-            old_name = os.path.basename(old_file)
-            if old_name != asset_name:
-                try:
-                    os.remove(old_file)
-                    print(f"[✓] Removed previous: {old_name}")
-                except Exception as e:
-                    print(f"[!] Could not remove {old_name}: {e}")
-
-def keep_only_latest_version(directory):
-    apk_files = glob.glob(os.path.join(directory, "*.apk"))
-    zip_files = glob.glob(os.path.join(directory, "*.zip"))
-    
-    for file_list in [apk_files, zip_files]:
-        if len(file_list) > 1:
-            file_list.sort(key=os.path.getmtime)
-            for old_file in file_list[:-1]:
-                os.remove(old_file)
-                print(f"[✓] Removed old version: {os.path.basename(old_file)}")
-
 def main():
     if not os.path.exists(LINKS_FILE):
         print(f"[-] File '{LINKS_FILE}' not found!")
@@ -103,7 +71,7 @@ def main():
     ensure_dir(DOWNLOAD_DIR)
 
     with open(LINKS_FILE, "r") as file:
-        links = [line.strip() for line in file.readlines() if line.strip()]
+        links =[line.strip() for line in file.readlines() if line.strip()]
 
     for link in links:
         print(f"\n>>> Checking repository: {link}")
@@ -115,23 +83,20 @@ def main():
         tag_name = release_data.get("tag_name", "Unknown")
         print(f"[*] Latest version found: {tag_name}")
         
-        assets = release_data.get("assets", [])
+        assets = release_data.get("assets",[])
         
         for asset in assets:
             asset_name = asset["name"]
             download_url = asset["browser_download_url"]
             
+            
             if should_download(asset_name):
                 save_path = os.path.join(DOWNLOAD_DIR, asset_name)
                 
-                clean_previous_versions(asset_name, DOWNLOAD_DIR)
-                
                 if os.path.exists(save_path):
-                    print(f"[!] Skipped: '{asset_name}' already exists.")
+                    print(f"[!] Skipped: '{asset_name}' already exists (No new update).")
                 else:
                     download_file(download_url, save_path)
-    
-    keep_only_latest_version(DOWNLOAD_DIR)
 
 if __name__ == "__main__":
     main()
